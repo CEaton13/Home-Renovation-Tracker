@@ -10,6 +10,7 @@ class Project(BaseModel):
 
     model_config = ConfigDict(extra="forbid") # prevent any extra properties from being inculded in the declaration of this object
 
+    id: int
     name: str = Field(min_length=5, max_length=200) 
     room: str = Field(min_length=1)
     budget: int
