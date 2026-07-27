@@ -19,6 +19,8 @@ def create_app(db_path: Path | str | None = None) -> Flask:
         db_path or os.environ.get("DB_PATH") or _DEFAULT_DB_PATH
     )
 
+    init_db(app.config["DB_PATH"])
+
     # mount the blueprints to the flask app to allow them to be accessable.
     app.register_blueprint(projects_bp)
     app.register_blueprint(tasks_bp)
