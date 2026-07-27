@@ -1,3 +1,5 @@
+PRAGMA foreign_keys = ON;
+
 CREATE TABLE IF NOT EXISTS projects(
     id                      INTEGER PRIMARY KEY AUTOINCREMENT,
     name                    TEXT NOT NULL,
@@ -22,3 +24,7 @@ CREATE TABLE IF NOT EXISTS tasks(
                             CHECK (task_status IN ('todo', 'in_progress', 'blocked', 'done')),
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE RESTRICT                        
 );
+
+CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(task_status);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(project_status);
