@@ -3,32 +3,37 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
 
 Task_Status = Literal["todo", "in_progress", "blocked", "done"]
-Trade = Literal["plumbing", "electrical", "carpentry", "HVAC", "demolition"]
+Trade = Literal["plumbing", "electrical", "carpentry", "hvac", "demolition", "painting", "flooring", "general"]
 
 
-class Task(BaseModel):
+class TaskCreate(BaseModel):
     """A single task record tied to a project."""
 
-    model_config = ConfigDict(extra="forbid") # prevent any extra properties from being inculded in the declaration of this object
-
-    project_record: str = Field(min_length=5, max_length=200) # Look into a regular expression possibly 
-    description: str = Field(min_length=1)
-    est_cost: int
-    actual_cost: int
+    description: str = Field(min_length=1, max_length=500)
+    est_cost: int = Field(ge=0)
     trade_category: Trade
-    task_status: Task_Status
 
 
-    # id: str = Field(pattern=r"^TKT-\d{5}$") # regular expression to ensure that the id is in the correct format
-    # title: str = Field(min_length=5, max_length=200) 
-    # body: str = Field(min_length=1)
-    # priority: Priority
-    # status: Status
-    # category: Category
-    # tenant: str = Field(min_length=1, max_length=50)
-    # customer_id: str = Field(pattern=r"^CUS-\d{5}$") # regular expression to ensure that the customer_id is in the correct format
-    # assignee: str | None = None
-    # channel: Channel
-    # tags: list[str] = Field(default_factory=list, max_length=10) # default_factory is used to create a new list for each instance of the Ticket class, and max_length is used to limit the number of tags to 10
-    # created_at: datetime 
-    # updated_at: datetime
+class TaskUpdate(BaseModel):
+    """Request response for updating an existing task."""
+
+    description: str | None = Field(default=None, min_length=1, max_length=500)
+    est_cost: int | None = Field(default=None, ge=0)
+    trade: Trade | None = None
+    status: Task_Status | None = None
+
+class TaskComplete(BaseModel):
+    """Returns the acutual cost once the task has been completed."""
+
+    actual_cost: int = Field(ge=0)
+
+class TaskRead(BaseModel):
+    """Response returned for a task."""
+
+    id: int
+    project_id: int
+    description: str
+    est_cost: int
+    actual_cost: int | None
+    trade_category: Trade
+    status: Task_Status
