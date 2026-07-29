@@ -1,6 +1,7 @@
 """Database connection management for the app."""
 import sqlite3
 from pathlib import Path
+from flask import current_app, g
 
 _SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
@@ -19,3 +20,18 @@ def init_db(db_path: Path | str | None = None) -> None:
         conn.commit()
     finally:
         conn.close()
+
+def get_db() -> sqlite3.Connection:
+    """Get the SQLite connection for the current request.
+    """
+    if "db" not in g:
+        g.db = connect(current_app.config["DATABASE_PATH"])
+    return g.db
+
+
+def close_db(_exception: Exception | None = None) -> None:
+    """Close the request-scoped connection, if one was opened.
+    """
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
