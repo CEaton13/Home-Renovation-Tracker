@@ -36,6 +36,13 @@ def update_project(conn: sqlite3.Connection, project_id: int, data: ProjectUpdat
     if not updates:
         return get_project(conn, project_id)
 
+    if updates.get("project_status") == "completed":
+        open_task_ids = _get_open_task_ids(conn, project_id)
+        if open_task_ids:
+            raise ConflictError(
+                f"Project {project_id} cannot be completed — tasks not done: {open_task_ids}"
+            )
+
     set_clause = ", ".join(f"{field} = ?" for field in updates)
     values = list(updates.values())
     values.append(project_id)
@@ -129,3 +136,12 @@ def get_project_totals(conn: sqlite3.Connection, project_id: int) -> dict:
         "remaining_budget": row["budget"] - total_actual_cost,
         "over_budget": total_actual_cost > row["budget"],
     }
+
+
+def _get_open_task_ids(conn: sqlite3.Connection, project_id: int) -> list[int]:
+    """Return ids of tasks under a project that are not yet 'done'."""
+    rows = conn.execute(
+        "SELECT id FROM tasks WHERE project_id = ? AND task_status != 'done'",
+        (project_id,),
+    ).fetchall()
+    return [row["id"] for row in rows]

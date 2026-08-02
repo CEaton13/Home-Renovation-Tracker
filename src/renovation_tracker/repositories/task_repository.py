@@ -3,7 +3,7 @@
 import sqlite3
 
 from renovation_tracker.models.task import TaskCreate, TaskUpdate, TaskComplete
-from renovation_tracker.api.errors import NotFoundError, ValidationError
+from renovation_tracker.api.errors import ConflictError, NotFoundError, ValidationError
 from renovation_tracker.repositories.project_repository import get_project, get_project_totals
 
 def create_task(conn: sqlite3.Connection, project_id: int, data: TaskCreate) -> int:
@@ -98,6 +98,9 @@ def complete_task(conn: sqlite3.Connection, task_id: int, data: TaskComplete) ->
     transaction.
     """
     task = get_task(conn, task_id)  # raises NotFoundError if missing
+
+    if task["task_status"] == "done":
+        raise ConflictError(f"Task {task_id} is already completed")
 
     conn.execute(
         "UPDATE tasks SET task_status = 'done', actual_cost = ?, updated_at = datetime('now') WHERE id = ?",
