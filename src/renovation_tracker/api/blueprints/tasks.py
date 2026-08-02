@@ -27,7 +27,7 @@ def list_tasks(project_id: int):
         conn,
         project_id,
         status=request.args.get("status"),
-        trade=request.args.get("trade"),
+        trade=request.args.get("trade_category"),
         estimated_min=request.args.get("estimated_min", type=int),
         estimated_max=request.args.get("estimated_max", type=int),
         actual_min=request.args.get("actual_min", type=int),

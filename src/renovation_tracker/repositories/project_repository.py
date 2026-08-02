@@ -69,7 +69,7 @@ def list_projects_with_aggregates(
     query = """
         SELECT
             p.*,
-            COALESCE(SUM(t.est_cost), 0) AS total_est_cost,
+            COALESCE(SUM(t.est_cost), 0) AS total_estimated_cost,
             COALESCE(SUM(t.actual_cost), 0) AS total_actual_cost,
             p.budget - COALESCE(SUM(t.actual_cost), 0) AS remaining_budget,
             CASE WHEN COALESCE(SUM(t.actual_cost), 0) > p.budget THEN 1 ELSE 0 END AS over_budget,
