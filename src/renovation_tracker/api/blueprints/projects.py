@@ -3,7 +3,7 @@ from flask import Blueprint, request
 
 from renovation_tracker.storage.db import get_db
 from renovation_tracker.api.errors import ConflictError
-from renovation_tracker.models.project import ProjectCreate, ProjectRead, ProjectUpdate
+from renovation_tracker.models.project import ProjectCreate, ProjectDashboardRead, ProjectRead, ProjectUpdate
 from renovation_tracker.repositories import project_repository
 
 projects_bp = Blueprint("projects", __name__, url_prefix="/projects")
@@ -45,3 +45,19 @@ def delete_project(project_id: int):
     conn = get_db()
     project_repository.delete_project(conn, project_id)
     return "", 204
+
+@projects_bp.get("")
+def list_projects():
+    """List all projects with cost aggregates, with optional filters."""
+    conn = get_db()
+    rows = project_repository.list_projects_with_aggregates(
+        conn,
+        room=request.args.get("room"),
+        status=request.args.get("status"),
+        budget_min=request.args.get("budget_min", type=int),
+        budget_max=request.args.get("budget_max", type=int),
+        target_date_from=request.args.get("target_date_from"),
+        target_date_to=request.args.get("target_date_to"),
+    )
+    projects = [ProjectDashboardRead.model_validate(dict(row)).model_dump(mode="json") for row in rows]
+    return {"projects": projects}, 200

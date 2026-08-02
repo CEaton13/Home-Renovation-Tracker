@@ -11,10 +11,10 @@ def create_project(conn: sqlite3.Connection, data: ProjectCreate) -> int:
     """Create a new project with status default to 'planning'."""
     cursor = conn.execute(
         """
-        INSERT INTO projects (name, room, budget, start_date, target_completion_date, status)
+        INSERT INTO projects (name, room, budget, start_date, target_completion_date, project_status)
         VALUES (?, ?, ?, ?, ?, 'planning')
         """,
-        (data.name, data.room, data.budget_cents, data.start_date.isoformat(), data.target_completion_date.isoformat()),
+        (data.name, data.room, data.budget, data.start_date.isoformat(), data.target_completion_date.isoformat()),
     )
     conn.commit()
     return cursor.lastrowid
