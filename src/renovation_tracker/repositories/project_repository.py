@@ -53,3 +53,51 @@ def delete_project(conn: sqlite3.Connection, project_id: int) -> None:
     except IntegrityError as e:
         conn.rollback()
         raise ConflictError(f"Project {project_id} has existing tasks and cannot be deleted") from e
+
+def list_projects_with_aggregates(
+    conn: sqlite3.Connection,
+    room: str | None = None,
+    status: str | None = None,
+    budget_min: int | None = None,
+    budget_max: int | None = None,
+    target_date_from: str | None = None,
+    target_date_to: str | None = None,
+) -> list[sqlite3.Row]:
+    """List all projects with optional filters and aggregate data."""
+
+    query = """
+        SELECT
+            p.*,
+            COALESCE(SUM(t.est_cost), 0) AS total_est_cost,
+            COALESCE(SUM(t.actual_cost), 0) AS total_actual_cost,
+            p.budget - COALESCE(SUM(t.actual_cost), 0) AS remaining_budget,
+            CASE WHEN COALESCE(SUM(t.actual_cost), 0) > p.budget THEN 1 ELSE 0 END AS over_budget,
+            COUNT(t.id) AS task_count
+        FROM projects p
+        LEFT JOIN tasks t ON t.project_id = p.id
+        WHERE 1 = 1
+    """
+    params: list = []
+
+    if room:
+        query += " AND p.room LIKE ?"
+        params.append(f"%{room}%")
+    if status:
+        query += " AND p.project_status = ?"
+        params.append(status)
+    if budget_min is not None:
+        query += " AND p.budget >= ?"
+        params.append(budget_min)
+    if budget_max is not None:
+        query += " AND p.budget <= ?"
+        params.append(budget_max)
+    if target_date_from:
+        query += " AND p.target_completion_date >= ?"
+        params.append(target_date_from)
+    if target_date_to:
+        query += " AND p.target_completion_date <= ?"
+        params.append(target_date_to)
+
+    query += " GROUP BY p.id ORDER BY p.id"
+
+    return conn.execute(query, params).fetchall()

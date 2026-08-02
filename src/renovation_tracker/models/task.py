@@ -19,8 +19,8 @@ class TaskUpdate(BaseModel):
 
     description: str | None = Field(default=None, min_length=1, max_length=500)
     est_cost: int | None = Field(default=None, ge=0)
-    trade: Trade | None = None
-    status: Task_Status | None = None
+    trade_category: Trade | None = None
+    task_status: Task_Status | None = None
 
 class TaskComplete(BaseModel):
     """Returns the acutual cost once the task has been completed."""
@@ -36,4 +36,4 @@ class TaskRead(BaseModel):
     est_cost: int
     actual_cost: int | None
     trade_category: Trade
-    status: Task_Status
+    task_status: Task_Status
