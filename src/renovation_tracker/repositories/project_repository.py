@@ -69,7 +69,7 @@ def list_projects_with_aggregates(
     query = """
         SELECT
             p.*,
-            COALESCE(SUM(t.est_cost), 0) AS total_estimated_cost,
+            COALESCE(SUM(t.est_cost), 0) AS total_est_cost,
             COALESCE(SUM(t.actual_cost), 0) AS total_actual_cost,
             p.budget - COALESCE(SUM(t.actual_cost), 0) AS remaining_budget,
             CASE WHEN COALESCE(SUM(t.actual_cost), 0) > p.budget THEN 1 ELSE 0 END AS over_budget,
@@ -102,3 +102,30 @@ def list_projects_with_aggregates(
     query += " GROUP BY p.id ORDER BY p.id"
 
     return conn.execute(query, params).fetchall()
+
+def get_project_totals(conn: sqlite3.Connection, project_id: int) -> dict:
+    """Compute live cost aggregates for a single project."""
+    row = conn.execute(
+        """
+        SELECT
+            p.budget,
+            COALESCE(SUM(t.est_cost), 0) AS total_est_cost,
+            COALESCE(SUM(t.actual_cost), 0) AS total_actual_cost
+        FROM projects p
+        LEFT JOIN tasks t ON t.project_id = p.id
+        WHERE p.id = ?
+        GROUP BY p.id
+        """,
+        (project_id,),
+    ).fetchone()
+
+    if row is None:
+        raise NotFoundError(f"Project {project_id} not found")
+
+    total_actual_cost = row["total_actual_cost"]
+    return {
+        "total_est_cost": row["total_est_cost"],
+        "total_actual_cost": total_actual_cost,
+        "remaining_budget": row["budget"] - total_actual_cost,
+        "over_budget": total_actual_cost > row["budget"],
+    }

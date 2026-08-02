@@ -2,9 +2,9 @@
 
 import sqlite3
 
-from renovation_tracker.models.task import TaskCreate, TaskUpdate
-from renovation_tracker.api.errors import NotFoundError
-from renovation_tracker.repositories.project_repository import get_project
+from renovation_tracker.models.task import TaskCreate, TaskUpdate, TaskComplete
+from renovation_tracker.api.errors import NotFoundError, ValidationError
+from renovation_tracker.repositories.project_repository import get_project, get_project_totals
 
 def create_task(conn: sqlite3.Connection, project_id: int, data: TaskCreate) -> int:
     """Create a new task for a given project."""
@@ -91,3 +91,20 @@ def delete_task(conn: sqlite3.Connection, task_id: int) -> None:
     get_task(conn, task_id)  # raises NotFoundError if missing
     conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     conn.commit()
+
+def complete_task(conn: sqlite3.Connection, task_id: int, data: TaskComplete) -> tuple[sqlite3.Row, dict]:
+    """Mark a task done, record its actual cost, and return the
+    project's recomputed totals — all against a single consistent
+    transaction.
+    """
+    task = get_task(conn, task_id)  # raises NotFoundError if missing
+
+    conn.execute(
+        "UPDATE tasks SET task_status = 'done', actual_cost = ?, updated_at = datetime('now') WHERE id = ?",
+        (data.actual_cost, task_id),
+    )
+    updated_task = get_task(conn, task_id)
+    totals = get_project_totals(conn, task["project_id"])
+    conn.commit()
+
+    return updated_task, totals

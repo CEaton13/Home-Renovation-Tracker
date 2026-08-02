@@ -3,7 +3,7 @@
 from flask import Blueprint, request
 
 from renovation_tracker.storage.db import get_db
-from renovation_tracker.models.task import TaskCreate, TaskRead, TaskUpdate
+from renovation_tracker.models.task import TaskCreate, TaskRead, TaskUpdate, TaskComplete
 from renovation_tracker.repositories import task_repository
 
 tasks_bp = Blueprint("tasks", __name__)
@@ -58,3 +58,16 @@ def delete_task(task_id: int):
     conn = get_db()
     task_repository.delete_task(conn, task_id)
     return "", 204
+
+@tasks_bp.post("/tasks/<int:task_id>/complete")
+def complete_task(task_id: int):
+    """Mark a task done and record its actual cost, atomically
+    reflecting the change in the project's totals.
+    """
+    data = TaskComplete.model_validate(request.get_json())
+    conn = get_db()
+    updated_task, totals = task_repository.complete_task(conn, task_id, data)
+
+    response = TaskRead.model_validate(dict(updated_task)).model_dump(mode="json")
+    response["project_totals"] = totals
+    return response, 200
