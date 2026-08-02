@@ -11,6 +11,7 @@ from renovation_tracker.api.blueprints.projects import projects_bp
 from renovation_tracker.api.blueprints.tasks import tasks_bp
 from renovation_tracker.api.errors import ConflictError, DomainError, NotFoundError, ValidationError
 from renovation_tracker.storage.db import init_db, close_db
+from renovation_tracker.logging_config import configure_logging
 
 _DEFAULT_DB_PATH = (
     Path(__file__).resolve().parent.parent / "renovation_tracker.db"
@@ -18,8 +19,13 @@ _DEFAULT_DB_PATH = (
 
 def create_app(db_path: Path | str | None = None) -> Flask:
     """Creating and configuring the Flask app"""
+    # configure logging for the app before creating the app instance
+    configure_logging()
+
+    # create the Flask app instance
     app = Flask(__name__)
 
+    # configure the database path for the app, using the provided db_path, or the environment variable, or the default path
     app.config["DB_PATH"] = str(
         db_path or os.environ.get("DB_PATH") or _DEFAULT_DB_PATH
     )
