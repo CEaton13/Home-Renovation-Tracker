@@ -3,6 +3,8 @@ from flask import Flask, g
 from pathlib import Path
 import os
 
+from pydantic import ValidationError as PydanticValidationError
+
 from renovation_tracker.api.blueprints.projects import projects_bp
 from renovation_tracker.api.blueprints.tasks import tasks_bp
 from renovation_tracker.api.errors import ConflictError, DomainError, NotFoundError, ValidationError
@@ -45,6 +47,10 @@ def create_app(db_path: Path | str | None = None) -> Flask:
     @app.errorhandler(DomainError)
     def handle_domain_error(e: DomainError):
         return {"error_code": e.error_code, "message": e.message}, 400
+
+    @app.errorhandler(PydanticValidationError)
+    def handle_pydantic_validation(e: PydanticValidationError):
+        return {"error_code": "validation_error", "message": str(e)}, 422
 
     return app 
 
