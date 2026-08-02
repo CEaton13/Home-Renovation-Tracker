@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS projects(
     target_completion_date  TEXT NOT NULL,
     project_status          TEXT NOT NULL DEFAULT 'planning' 
                             CHECK (project_status IN ('planning', 'in_progress', 'on_hold', 'completed', 'cancelled'))  
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS tasks(
@@ -21,6 +23,8 @@ CREATE TABLE IF NOT EXISTS tasks(
                             CHECK (trade_category IN ('plumbing', 'electrical', 'carpentry', 'hvac', 'demolition', 'painting', 'flooring', 'general')),
     task_status             TEXT NOT NULL DEFAULT 'todo'
                             CHECK (task_status IN ('todo', 'in_progress', 'blocked', 'done')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE RESTRICT                        
 );
 
