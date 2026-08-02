@@ -11,6 +11,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from renovation_tracker.api.blueprints.projects import projects_bp
 from renovation_tracker.api.blueprints.tasks import tasks_bp
+from renovation_tracker.api.blueprints.health import health_bp
 from renovation_tracker.api.errors import ConflictError, DomainError, NotFoundError, ValidationError
 from renovation_tracker.storage.db import init_db, close_db
 from renovation_tracker.logging_config import configure_logging
@@ -39,6 +40,7 @@ def create_app(db_path: Path | str | None = None) -> Flask:
     # mount the blueprints to the flask app to allow them to be accessable.
     app.register_blueprint(projects_bp)
     app.register_blueprint(tasks_bp)
+    app.register_blueprint(health_bp)
 
     # setup request logging with a unique request ID for each request
     logger = structlog.get_logger()

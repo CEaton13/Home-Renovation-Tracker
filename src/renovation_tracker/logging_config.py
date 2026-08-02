@@ -12,8 +12,6 @@ def configure_logging() -> None:
     Should be called once, during app startup, before any log calls
     are made.
     """
-    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.INFO)
-
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
@@ -21,6 +19,6 @@ def configure_logging() -> None:
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.JSONRenderer(),
         ],
-        logger_factory=structlog.stdlib.LoggerFactory(),
+        logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
