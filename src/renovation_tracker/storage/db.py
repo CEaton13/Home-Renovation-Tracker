@@ -25,7 +25,7 @@ def get_db() -> sqlite3.Connection:
     """Get the SQLite connection for the current request.
     """
     if "db" not in g:
-        g.db = connect(current_app.config["DATABASE_PATH"])
+        g.db = connect(current_app.config["DB_PATH"])
     return g.db
 
 
