@@ -1,6 +1,8 @@
 """Application factory for the Home Renovation Tracker API."""
 import os
 import uuid
+import time
+import structlog
 
 from flask import Flask, app, g, request
 from pathlib import Path
@@ -38,12 +40,37 @@ def create_app(db_path: Path | str | None = None) -> Flask:
     app.register_blueprint(projects_bp)
     app.register_blueprint(tasks_bp)
 
+    # setup request logging with a unique request ID for each request
+    logger = structlog.get_logger()
+    @app.before_request
+    def _start_request_logging():
+        g.request_id = str(uuid.uuid4())
+        g.request_start_time = time.perf_counter()
+        structlog.contextvars.bind_contextvars(request_id=g.request_id)
+    
+    @app.after_request
+    def _log_request(response):
+        duration_ms = round((time.perf_counter() - g.request_start_time) * 1000, 2)
+        logger.info(
+            "request_completed",
+            method=request.method,
+            path=request.path,
+            status_code=response.status_code,
+            duration_ms=duration_ms,
+        )
+        return response
+    
+    # clear the request logging context after each request to avoid leaking context between requests
+    @app.teardown_request
+    def _clear_request_logging(_exception=None):
+        structlog.contextvars.clear_contextvars()
 
     # assign a unique request ID to each request for logging and tracing purposes
-    @app.before_request
-    def _assign_request_id():
-        g.request_id = str(uuid.uuid4())
+    # @app.before_request
+    # def _assign_request_id():
+    #     g.request_id = str(uuid.uuid4())
 
+    # define a helper function to create a consistent error response envelope for API errors
     def _error_envelope(error_code: str, message: str, errors: list | None = None) -> dict:
         envelope = {"error_code": error_code, "message": message, "request_id": g.get("request_id")}
         if errors:
