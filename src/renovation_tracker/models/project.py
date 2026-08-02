@@ -37,7 +37,7 @@ class ProjectRead(BaseModel):
 class ProjectDashboardRead(ProjectRead):
     """Response for the dashboard/list endpoint, including task-derived aggregates."""
 
-    total_estimated_cost: int
+    total_est_cost: int
     total_actual_cost: int
     remaining_budget: int
     over_budget: bool

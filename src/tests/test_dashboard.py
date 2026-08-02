@@ -11,7 +11,7 @@ def test_dashboard_shows_zero_totals_for_project_with_no_tasks(client):
 
     assert response.status_code == 200
     project = response.get_json()["projects"][0]
-    assert project["total_estimated_cost"] == 0
+    assert project["total_est_cost"] == 0
     assert project["task_count"] == 0
 
 
@@ -32,7 +32,7 @@ def test_dashboard_sums_estimated_costs_across_tasks(client):
     response = client.get("/projects")
     project = next(p for p in response.get_json()["projects"] if p["id"] == project_id)
 
-    assert project["total_estimated_cost"] == 350_000
+    assert project["total_est_cost"] == 350_000
     assert project["task_count"] == 2
 
 
