@@ -1,8 +1,9 @@
 """Functions to access the data from the db for projects."""
 
-from sqlite3 import sqlite3, IntegrityError
+import sqlite3
+from sqlite3 import IntegrityError
 
-from renovation_tracker.models.project import ProjectCreate, ProjectUpdate\
+from renovation_tracker.models.project import ProjectCreate, ProjectUpdate
 
 from renovation_tracker.api.errors import NotFoundError
 from renovation_tracker.api.errors import ConflictError

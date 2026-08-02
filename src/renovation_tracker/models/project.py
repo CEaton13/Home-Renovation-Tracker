@@ -20,7 +20,7 @@ class ProjectUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     budget: int | None = Field(default=None, ge=0)
     target_completion_date: date | None = None
-    status: Proj_Status | None = None
+    project_status: Proj_Status | None = None
 
 
 class ProjectRead(BaseModel):
@@ -29,7 +29,16 @@ class ProjectRead(BaseModel):
     id: int
     name: str
     room: str
-    budget_cents: int
+    budget: int
     start_date: date
     target_completion_date: date
-    status: Proj_Status
+    project_status: Proj_Status
+
+class ProjectDashboardRead(ProjectRead):
+    """Response for the dashboard/list endpoint, including task-derived aggregates."""
+
+    total_estimated_cost: int
+    total_actual_cost: int
+    remaining_budget: int
+    over_budget: bool
+    task_count: int

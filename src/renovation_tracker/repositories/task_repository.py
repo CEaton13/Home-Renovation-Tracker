@@ -85,3 +85,9 @@ def update_task(conn: sqlite3.Connection, task_id: int, data: TaskUpdate) -> sql
     conn.execute(f"UPDATE tasks SET {set_clause}, updated_at = datetime('now') WHERE id = ?", values)
     conn.commit()
     return get_task(conn, task_id)
+
+def delete_task(conn: sqlite3.Connection, task_id: int) -> None:
+    """Delete a task."""
+    get_task(conn, task_id)  # raises NotFoundError if missing
+    conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
