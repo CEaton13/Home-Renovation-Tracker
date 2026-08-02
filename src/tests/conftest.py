@@ -14,7 +14,7 @@ def app():
     for each test.
     """
     db_fd, db_path = tempfile.mkstemp(suffix=".db")
-    os.environ["DATABASE_PATH"] = db_path
+    os.environ["DB_PATH"] = db_path
 
     flask_app = create_app()
 
