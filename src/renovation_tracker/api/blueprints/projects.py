@@ -1,13 +1,16 @@
 """Routes for the projects resources."""
-from flask import Blueprint, request
+from flask import Blueprint, current_app, request
+import structlog
 
 from renovation_tracker.storage.db import get_db
 from renovation_tracker.api.errors import ConflictError
 from renovation_tracker.models.project import ProjectCreate, ProjectDashboardRead, ProjectRead, ProjectUpdate
 from renovation_tracker.repositories import project_repository
+from renovation_tracker.services.enrichment_service import generate_enrichment
+
+logger = structlog.get_logger()
 
 projects_bp = Blueprint("projects", __name__, url_prefix="/projects")
-
 
 @projects_bp.post("")
 def create_project():
@@ -15,6 +18,16 @@ def create_project():
     data = ProjectCreate.model_validate(request.get_json())
     conn = get_db()
     project_id = project_repository.create_project(conn, data)
+
+    client = current_app.config.get("ENRICHMENT_CLIENT")
+    if client is not None:
+        try:
+            payload = generate_enrichment(client, data.name, data.room, data.budget)
+            project_repository.update_project_enrichment(conn, project_id, payload.model_dump_json(), "complete")
+        except Exception:
+            logger.exception("enrichment_failed", project_id=project_id)
+            project_repository.update_project_enrichment(conn, project_id, None, "failed")
+
     row = project_repository.get_project(conn, project_id)
     return ProjectRead.model_validate(dict(row)).model_dump(mode="json"), 201
 

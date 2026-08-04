@@ -15,6 +15,8 @@ from renovation_tracker.api.blueprints.health import health_bp
 from renovation_tracker.api.errors import ConflictError, DomainError, NotFoundError, ValidationError
 from renovation_tracker.storage.db import init_db, close_db
 from renovation_tracker.logging_config import configure_logging
+from renovation_tracker.azure_client import AzureEnrichmentClient
+from renovation_tracker.azure_config import load_azure_config
 
 _DEFAULT_DB_PATH = (
     Path(__file__).resolve().parent.parent / "renovation_tracker.db"
@@ -34,6 +36,15 @@ def create_app(db_path: Path | str | None = None) -> Flask:
     )
     # create the db connection 
     init_db(app.config["DB_PATH"])
+
+    # configure the Azure OpenAI enrichment client for the app, if the required environment variables are set
+    try:
+        app.config["ENRICHMENT_CLIENT"] = AzureEnrichmentClient(load_azure_config())
+    except RuntimeError:
+        app.logger.warning("Azure OpenAI not configured — enrichment will be skipped on create/update")
+        app.config["ENRICHMENT_CLIENT"] = None
+
+
     # close the db
     app.teardown_appcontext(close_db)
 
