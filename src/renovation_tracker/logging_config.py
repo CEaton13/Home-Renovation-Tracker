@@ -12,6 +12,8 @@ def configure_logging() -> None:
     Should be called once, during app startup, before any log calls
     are made.
     """
+    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.INFO, force=True)
+    
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,

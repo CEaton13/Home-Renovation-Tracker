@@ -6,6 +6,7 @@ import tempfile
 import pytest
 
 from renovation_tracker.app import create_app
+from tests.stubs import StubSuccessClient
 
 
 @pytest.fixture
@@ -17,6 +18,7 @@ def app():
     os.environ["DB_PATH"] = db_path
 
     flask_app = create_app()
+    flask_app.config["ENRICHMENT_CLIENT"] = StubSuccessClient()
 
     yield flask_app
 
