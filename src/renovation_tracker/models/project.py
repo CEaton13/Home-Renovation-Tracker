@@ -33,6 +33,7 @@ class ProjectRead(BaseModel):
     start_date: date
     target_completion_date: date
     project_status: Proj_Status
+    enrichment_status: Literal["pending", "complete", "failed"]
 
 class ProjectDashboardRead(ProjectRead):
     """Response for the dashboard/list endpoint, including task-derived aggregates."""

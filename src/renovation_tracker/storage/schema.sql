@@ -9,8 +9,11 @@ CREATE TABLE IF NOT EXISTS projects(
     target_completion_date  TEXT NOT NULL,
     project_status          TEXT NOT NULL DEFAULT 'planning' 
                             CHECK (project_status IN ('planning', 'in_progress', 'on_hold', 'completed', 'cancelled')),  
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at              TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at              TEXT NOT NULL DEFAULT (datetime('now')),
+    enrichment_payload      TEXT,
+    enrichment_status       TEXT NOT NULL DEFAULT 'pending'
+                            CHECK (enrichment_status IN ('pending', 'complete', 'failed'))
 );
 
 CREATE TABLE IF NOT EXISTS tasks(
