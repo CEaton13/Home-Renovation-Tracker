@@ -20,7 +20,7 @@ realistic. If unsure, prefer a wider or more conservative estimate.
 - Respond with ONLY a JSON object matching this shape, no other text:
 {"suggested_tasks": [{"description": str, "trade_category": one of \
 "plumbing"|"electrical"|"carpentry"|"painting"|"flooring"|"hvac"|"general", \
-"rough_estimate_cents": int}], "confidence": float between 0 and 1}
+"rough_estimate": int}], "confidence": float between 0 and 1}
 """
 
 
