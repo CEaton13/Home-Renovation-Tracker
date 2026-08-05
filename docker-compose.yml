@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+    volumes:
+      - renovation_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/live')"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  renovation_data:

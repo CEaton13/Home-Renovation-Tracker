@@ -126,4 +126,4 @@ def create_app(db_path: Path | str | None = None) -> Flask:
 
 
 if __name__ == "__main__":
-    create_app().run(debug=True)
+    create_app().run(host="0.0.0.0", debug=True)
