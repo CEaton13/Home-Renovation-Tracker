@@ -49,3 +49,15 @@ On project creation, the service calls a deployed Azure OpenAI model to suggest 
 
 - **Deleting a task while its project's total is being recomputed:** `complete_task` performs its `UPDATE` and the totals `SELECT` within the same connection before committing, so a concurrent `DELETE` of that task from another connection blocks behind that write lock until the completing transaction commits — the totals returned reflect a consistent pre-delete-or-post-complete snapshot, never a half-applied state.
 - No optimistic locking (a `version` column or `updated_at` compare-and-swap) or application-level row locking is implemented; SQLite's own writer serialization is the only concurrency guard currently in place.
+
+**Testability:** the enrichment client is a `Protocol` (`EnrichmentClient`), not a concrete dependency — route code depends on the interface, not on `AzureEnrichmentClient` directly. Tests inject plain stub objects (`tests/stubs.py`) satisfying that one-method interface, so the full test suite runs without any network call, in ~13 seconds for 33 tests.
+
+## Structured Logging
+
+Every request emits one JSON log line (method, path, status code, duration, correlation id) via structlog. The same correlation id appears in every error response body under `request_id`, so a client-reported error can be traced directly to its server-side log line.
+
+## Running Tests
+
+```powershell
+pytest tests/ -v
+```
