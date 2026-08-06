@@ -65,3 +65,21 @@ def test_delete_project_with_confirmation_returns_204(client):
 
     assert response.status_code == 204
     assert client.get(f"/projects/{project_id}").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "method, query, json_body",
+    [
+        ("get", "", None),
+        ("put", "", {"budget": 100_000}),
+        ("delete", "?confirm=true", None),
+    ],
+    ids=["get", "put", "delete"],
+)
+def test_project_not_found_returns_consistent_404_envelope(client, method, query, json_body):
+    response = getattr(client, method)(f"/projects/9999{query}", json=json_body)
+
+    assert response.status_code == 404
+    body = response.get_json()
+    assert body["error_code"] == "not_found"
+    assert "request_id" in body

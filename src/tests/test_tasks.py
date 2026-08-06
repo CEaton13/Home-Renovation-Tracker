@@ -1,5 +1,7 @@
 """Tests for task CRUD endpoints."""
 
+import pytest
+
 
 def _create_project(client) -> int:
     response = client.post("/projects", json={
@@ -56,3 +58,28 @@ def test_delete_task_without_confirmation_returns_409(client):
     response = client.delete(f"/tasks/{task_id}")
 
     assert response.status_code == 409
+
+
+@pytest.mark.parametrize(
+    "trade",
+    ["plumbing", "electrical", "carpentry", "hvac", "demolition", "painting", "flooring", "general"],
+)
+def test_create_task_accepts_every_valid_trade_category(client, trade):
+    project_id = _create_project(client)
+
+    response = client.post(f"/projects/{project_id}/tasks", json={
+        "description": "Task", "est_cost": 100_000, "trade_category": trade,
+    })
+
+    assert response.status_code == 201
+    assert response.get_json()["trade_category"] == trade
+
+
+def test_create_task_rejects_invalid_trade_category(client):
+    project_id = _create_project(client)
+
+    response = client.post(f"/projects/{project_id}/tasks", json={
+        "description": "Task", "est_cost": 100_000, "trade_category": "landscaping",
+    })
+
+    assert response.status_code == 422

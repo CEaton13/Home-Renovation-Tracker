@@ -12,6 +12,23 @@ logger = structlog.get_logger()
 
 projects_bp = Blueprint("projects", __name__, url_prefix="/projects")
 
+
+def _run_enrichment(conn, client, project_id: int, name: str, room: str, budget: int) -> None:
+    """Call the enrichment client and persist the result.
+
+    Never raises — a failure is logged (with the request's correlation id
+    via the bound structlog context) and the project is marked
+    enrichment_status='failed' instead, so the caller's create/update
+    always succeeds regardless of enrichment outcome.
+    """
+    try:
+        payload = generate_enrichment(client, name, room, budget)
+        project_repository.update_project_enrichment(conn, project_id, payload.model_dump_json(), "complete")
+    except Exception:
+        logger.exception("enrichment_failed", project_id=project_id)
+        project_repository.update_project_enrichment(conn, project_id, None, "failed")
+
+
 @projects_bp.post("")
 def create_project():
     """Create a new renovation project."""
@@ -21,12 +38,7 @@ def create_project():
 
     client = current_app.config.get("ENRICHMENT_CLIENT")
     if client is not None:
-        try:
-            payload = generate_enrichment(client, data.name, data.room, data.budget)
-            project_repository.update_project_enrichment(conn, project_id, payload.model_dump_json(), "complete")
-        except Exception:
-            logger.exception("enrichment_failed", project_id=project_id)
-            project_repository.update_project_enrichment(conn, project_id, None, "failed")
+        _run_enrichment(conn, client, project_id, data.name, data.room, data.budget)
 
     row = project_repository.get_project(conn, project_id)
     return ProjectRead.model_validate(dict(row)).model_dump(mode="json"), 201
@@ -46,6 +58,13 @@ def update_project(project_id: int):
     data = ProjectUpdate.model_validate(request.get_json())
     conn = get_db()
     row = project_repository.update_project(conn, project_id, data)
+
+    if data.name is not None or data.budget is not None:
+        client = current_app.config.get("ENRICHMENT_CLIENT")
+        if client is not None:
+            _run_enrichment(conn, client, project_id, row["name"], row["room"], row["budget"])
+            row = project_repository.get_project(conn, project_id)
+
     return ProjectRead.model_validate(dict(row)).model_dump(mode="json"), 200
 
 

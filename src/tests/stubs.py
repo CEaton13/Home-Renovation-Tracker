@@ -28,3 +28,14 @@ class StubMalformedClient:
 
     def get_completion(self, system_prompt: str, user_prompt: str) -> str:
         return "not valid json at all"
+
+
+class CountingStubClient:
+    """Wraps StubSuccessClient's behavior while tracking how many times it was called."""
+
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    def get_completion(self, system_prompt: str, user_prompt: str) -> str:
+        self.call_count += 1
+        return StubSuccessClient().get_completion(system_prompt, user_prompt)
