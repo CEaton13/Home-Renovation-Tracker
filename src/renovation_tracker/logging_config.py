@@ -12,13 +12,16 @@ def configure_logging() -> None:
     Should be called once, during app startup, before any log calls
     are made.
     """
+    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.INFO, force=True)
+    
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.format_exc_info,
             structlog.processors.JSONRenderer(),
         ],
-        logger_factory=structlog.PrintLoggerFactory(),
+        logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )

@@ -31,6 +31,13 @@ class AzureEnrichmentClient:
             model=self._deployment,
             instructions=system_prompt,
             input=user_prompt,
-            max_output_tokens=800,
+            max_output_tokens=2000,
+            reasoning={"effort": "low"},
         )
+
+        if response.status == "incomplete":
+            raise RuntimeError(
+                f"Model response incomplete: {response.incomplete_details}"
+            )
+
         return response.output_text

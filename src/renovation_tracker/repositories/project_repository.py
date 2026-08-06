@@ -145,3 +145,12 @@ def _get_open_task_ids(conn: sqlite3.Connection, project_id: int) -> list[int]:
         (project_id,),
     ).fetchall()
     return [row["id"] for row in rows]
+
+def update_project_enrichment(
+    conn: sqlite3.Connection, project_id: int, enrichment_payload: str | None, enrichment_status: str) -> None:
+    """Persist the result of an enrichment attempt on a project."""
+    conn.execute(
+        "UPDATE projects SET enrichment_payload = ?, enrichment_status = ?, updated_at = datetime('now') WHERE id = ?",
+        (enrichment_payload, enrichment_status, project_id),
+    )
+    conn.commit()

@@ -1,16 +1,18 @@
 """Tests confirming requests emit structured log output."""
 
 import json
+import logging
 
 
-def test_request_emits_json_log_with_expected_fields(client, capsys):
+def test_request_emits_json_log_with_expected_fields(client, caplog):
+    caplog.set_level(logging.INFO)
+
     client.get("/live")
 
-    captured = capsys.readouterr()
-    log_lines = [line for line in captured.out.strip().split("\n") if line]
-    assert len(log_lines) >= 1
+    assert len(caplog.records) >= 1
+    last_record = caplog.records[-1]
+    last_log = json.loads(last_record.getMessage())
 
-    last_log = json.loads(log_lines[-1])
     assert last_log["event"] == "request_completed"
     assert last_log["method"] == "GET"
     assert last_log["path"] == "/live"

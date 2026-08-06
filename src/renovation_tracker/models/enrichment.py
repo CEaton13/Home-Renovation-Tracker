@@ -11,7 +11,7 @@ class SuggestedTask(BaseModel):
     """A single AI-suggested task within a project's enrichment."""
 
     description: str = Field(min_length=1, max_length=500)
-    trade: Trade
+    trade_category: Trade
     rough_estimate: int = Field(ge=0)
 
 
