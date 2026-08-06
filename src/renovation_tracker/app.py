@@ -17,6 +17,7 @@ from renovation_tracker.storage.db import init_db, close_db
 from renovation_tracker.logging_config import configure_logging
 from renovation_tracker.azure_client import AzureEnrichmentClient
 from renovation_tracker.azure_config import load_azure_config
+from renovation_tracker.api.blueprints.ui import ui_bp
 
 _DEFAULT_DB_PATH = (
     Path(__file__).resolve().parent.parent / "renovation_tracker.db"
@@ -52,6 +53,7 @@ def create_app(db_path: Path | str | None = None) -> Flask:
     app.register_blueprint(projects_bp)
     app.register_blueprint(tasks_bp)
     app.register_blueprint(health_bp)
+    app.register_blueprint(ui_bp)
 
     # setup request logging with a unique request ID for each request
     logger = structlog.get_logger()

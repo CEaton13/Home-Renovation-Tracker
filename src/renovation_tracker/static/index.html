@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Home Renovation Tracker</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f6f5f3; color: #222; }
+  header { background: #2c3e50; color: white; padding: 1rem 1.5rem; }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  main { max-width: 960px; margin: 1.5rem auto; padding: 0 1rem; display: grid; gap: 1.5rem; }
+  section { background: white; border-radius: 8px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  h2 { margin-top: 0; font-size: 1.05rem; color: #2c3e50; }
+  form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  form.wide { grid-template-columns: 1fr; }
+  label { font-size: 0.8rem; color: #555; display: block; margin-bottom: 0.2rem; }
+  input, select { width: 100%; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+  button { cursor: pointer; background: #2c7a5b; color: white; border: none; border-radius: 4px; padding: 0.5rem 1rem; font-size: 0.9rem; }
+  button:disabled { background: #9ab; cursor: not-allowed; opacity: 0.8; }
+  button.danger { background: #b23a3a; }
+  button.secondary { background: #888; }
+  .project-card { border: 1px solid #e2e0dc; border-radius: 6px; padding: 0.9rem; margin-bottom: 0.75rem; }
+  .project-card.selected { border-color: #2c7a5b; background: #f2f8f5; }
+  .project-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .badge { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 10px; background: #eee; margin-left: 0.4rem; }
+  .badge.over { background: #f8d7da; color: #842029; }
+  .badge.status-completed { background: #d1e7dd; color: #0f5132; }
+  .task-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; font-size: 0.88rem; }
+  .task-row:last-child { border-bottom: none; }
+  .task-actions button { font-size: 0.78rem; padding: 0.25rem 0.6rem; margin-left: 0.3rem; }
+  .muted { color: #888; font-size: 0.82rem; }
+  .error { color: #b23a3a; font-size: 0.85rem; margin-top: 0.4rem; }
+  .full-width { grid-column: 1 / -1; }
+  .status-select { font-size: 0.78rem; padding: 0.2rem 0.4rem; border-radius: 10px; border: 1px solid #ccc; margin-left: 0.4rem; }
+  .task-status-select { font-size: 0.78rem; padding: 0.2rem 0.4rem; margin-right: 0.3rem; }
+</style>
+</head>
+<body>
+
+<header><h1>Home Renovation Tracker</h1></header>
+
+<main>
+  <section>
+    <h2>New Project</h2>
+    <form id="project-form">
+      <div><label>Name</label><input name="name" required></div>
+      <div><label>Room</label><input name="room" required></div>
+      <div><label>Budget (dollars)</label><input name="budget_dollars" type="number" step="0.01" required></div>
+      <div><label>Start Date</label><input name="start_date" type="date" required></div>
+      <div class="full-width"><label>Target Completion</label><input name="target_completion_date" type="date" required></div>
+      <div class="full-width"><button type="submit">Create Project</button></div>
+    </form>
+    <div id="project-form-error" class="error"></div>
+  </section>
+
+  <section>
+    <h2>Projects</h2>
+    <div id="project-list"></div>
+  </section>
+
+  <section id="task-section" style="display:none;">
+    <h2 id="task-section-title">Tasks</h2>
+
+    <form id="task-form">
+      <div><label>Description</label><input name="description" required></div>
+      <div>
+        <label>Trade</label>
+        <select name="trade_category" required>
+          <option value="general">General</option>
+          <option value="plumbing">Plumbing</option>
+          <option value="electrical">Electrical</option>
+          <option value="carpentry">Carpentry</option>
+          <option value="painting">Painting</option>
+          <option value="flooring">Flooring</option>
+          <option value="hvac">HVAC</option>
+        </select>
+      </div>
+      <div class="full-width"><label>Estimated Cost (dollars)</label><input name="est_cost_dollars" type="number" step="0.01" required></div>
+      <div class="full-width"><button type="submit">Add Task</button></div>
+    </form>
+    <div id="task-form-error" class="error"></div>
+
+    <div id="task-list" style="margin-top: 1rem;"></div>
+  </section>
+</main>
+
+<script>
+const API = "";
+let selectedProjectId = null;
+
+function dollars(cents) {
+  return "$" + (cents / 100).toFixed(2);
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  const body = res.status === 204 ? null : await res.json();
+  if (!res.ok) throw new Error(body?.message || "Request failed");
+  return body;
+}
+
+async function loadProjects() {
+  const data = await api("/projects");
+  const list = document.getElementById("project-list");
+  list.innerHTML = "";
+
+  if (data.projects.length === 0) {
+    list.innerHTML = '<p class="muted">No projects yet — create one above.</p>';
+    return;
+  }
+
+  for (const p of data.projects) {
+    const card = document.createElement("div");
+    card.className = "project-card" + (p.id === selectedProjectId ? " selected" : "");
+    const enrichmentHtml = p.enrichment ? `
+      <details style="margin-top:0.5rem;">
+        <summary style="cursor:pointer; font-size:0.85rem; color:#2c7a5b;">
+          AI-suggested tasks (${p.enrichment.suggested_tasks.length}) — confidence ${(p.enrichment.confidence * 100).toFixed(0)}%
+        </summary>
+        <ul style="margin:0.4rem 0 0; padding-left:1.2rem; font-size:0.85rem;">
+          ${p.enrichment.suggested_tasks.map(t => `
+            <li>${t.description} <span class="muted">(${t.trade_category}, ~${dollars(t.rough_estimate)})</span></li>
+          `).join("")}
+        </ul>
+      </details>
+    ` : "";
+    card.innerHTML = `
+      <div class="project-header">
+        <div>
+          <strong>${p.name}</strong> — ${p.room}
+          <select class="status-select" data-project-id="${p.id}" onclick="event.stopPropagation()">
+            ${["planning", "in_progress", "on_hold", "completed", "cancelled"].map(s =>
+              `<option value="${s}" ${s === p.project_status ? "selected" : ""}>${s}</option>`
+            ).join("")}
+          </select>
+          ${p.over_budget ? '<span class="badge over">over budget</span>' : ""}
+        </div>
+        <button class="danger" data-action="delete-project" data-id="${p.id}">Delete</button>
+      </div>
+      <div class="muted" style="margin-top:0.4rem;">
+        Budget ${dollars(p.budget)} · Est ${dollars(p.total_est_cost)} · Actual ${dollars(p.total_actual_cost)}
+        · Remaining ${dollars(p.remaining_budget)} · ${p.task_count} task(s)
+        · Enrichment: ${p.enrichment_status}
+      </div>
+      ${enrichmentHtml}
+    `;
+    card.querySelector(".project-header").addEventListener("click", (e) => {
+      if (e.target.dataset.action) return;
+      selectProject(p.id, p.name);
+    });
+    card.querySelector('[data-action="delete-project"]').addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Delete project "${p.name}"? This cannot be undone.`)) return;
+      try {
+        await api(`/projects/${p.id}?confirm=true`, { method: "DELETE" });
+        if (selectedProjectId === p.id) {
+          selectedProjectId = null;
+          document.getElementById("task-section").style.display = "none";
+        }
+        loadProjects();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+    card.querySelector(".status-select").addEventListener("change", async (e) => {
+      const newStatus = e.target.value;
+      const previousStatus = p.project_status;
+      try {
+        await api(`/projects/${p.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ project_status: newStatus }),
+        });
+        loadProjects();
+      } catch (err) {
+        alert(err.message);
+        e.target.value = previousStatus; // revert the dropdown on failure
+      }
+    });
+    list.appendChild(card);
+  }
+}
+
+function selectProject(id, name) {
+  selectedProjectId = id;
+  document.getElementById("task-section").style.display = "block";
+  document.getElementById("task-section-title").textContent = `Tasks — ${name}`;
+  loadProjects();
+  loadTasks();
+}
+
+async function loadTasks() {
+  if (!selectedProjectId) return;
+  const data = await api(`/projects/${selectedProjectId}/tasks`);
+  const list = document.getElementById("task-list");
+  list.innerHTML = "";
+
+  if (data.tasks.length === 0) {
+    list.innerHTML = '<p class="muted">No tasks yet.</p>';
+    return;
+  }
+
+  for (const t of data.tasks) {
+    const row = document.createElement("div");
+    row.className = "task-row";
+    row.innerHTML = `
+      <div>
+        <strong>${t.description}</strong> <span class="muted">(${t.trade_category})</span><br>
+        <span class="muted">
+          Est ${dollars(t.est_cost)}${t.actual_cost !== null ? " · Actual " + dollars(t.actual_cost) : ""}
+          · ${t.task_status}
+        </span>
+      </div>
+      <div class="task-actions">
+        ${t.task_status !== "done" ? `
+          <select class="task-status-select" data-task-id="${t.id}">
+            ${["todo", "in_progress", "blocked"].map(s =>
+              `<option value="${s}" ${s === t.task_status ? "selected" : ""}>${s}</option>`
+            ).join("")}
+          </select>
+          <button data-action="complete" data-id="${t.id}">Complete</button>
+        ` : ""}
+        <button class="danger" data-action="delete-task" data-id="${t.id}">Delete</button>
+      </div>
+    `;
+    const completeBtn = row.querySelector('[data-action="complete"]');
+    if (completeBtn) {
+      completeBtn.addEventListener("click", async () => {
+        const dollarsInput = prompt(`Actual cost for "${t.description}" (dollars):`);
+        if (dollarsInput === null) return;
+        const cents = Math.round(parseFloat(dollarsInput) * 100);
+        if (isNaN(cents)) { alert("Enter a valid number."); return; }
+        try {
+          await api(`/tasks/${t.id}/complete`, {
+            method: "POST",
+            body: JSON.stringify({ actual_cost: cents }),
+          });
+          loadTasks();
+          loadProjects();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+    const statusSelect = row.querySelector(".task-status-select");
+    if (statusSelect) {
+      statusSelect.addEventListener("change", async (e) => {
+        const newStatus = e.target.value;
+        const previousStatus = t.task_status;
+        try {
+          await api(`/tasks/${t.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ task_status: newStatus }),
+          });
+          loadTasks();
+        } catch (err) {
+          alert(err.message);
+          e.target.value = previousStatus;
+        }
+      });
+    }
+    row.querySelector('[data-action="delete-task"]').addEventListener("click", async () => {
+      if (!confirm(`Delete task "${t.description}"?`)) return;
+      try {
+        await api(`/tasks/${t.id}?confirm=true`, { method: "DELETE" });
+        loadTasks();
+        loadProjects();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+    list.appendChild(row);
+  }
+}
+
+document.getElementById("project-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const errorEl = document.getElementById("project-form-error");
+  const submitBtn = form.querySelector("button[type=submit]");
+  const originalLabel = submitBtn.textContent;
+
+  errorEl.textContent = "";
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Creating project… (AI is generating task suggestions, ~10s)";
+
+  try {
+    await api("/projects", {
+      method: "POST",
+      body: JSON.stringify({
+        name: form.name.value,
+        room: form.room.value,
+        budget: Math.round(parseFloat(form.budget_dollars.value) * 100),
+        start_date: form.start_date.value,
+        target_completion_date: form.target_completion_date.value,
+      }),
+    });
+    form.reset();
+    loadProjects();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalLabel;
+  }
+});
+
+document.getElementById("task-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const errorEl = document.getElementById("task-form-error");
+  errorEl.textContent = "";
+  if (!selectedProjectId) return;
+  try {
+    await api(`/projects/${selectedProjectId}/tasks`, {
+      method: "POST",
+      body: JSON.stringify({
+        description: form.description.value,
+        trade_category: form.trade_category.value,
+        est_cost: Math.round(parseFloat(form.est_cost_dollars.value) * 100),
+      }),
+    });
+    form.reset();
+    loadTasks();
+    loadProjects();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+});
+
+loadProjects();
+</script>
+</body>
+</html>

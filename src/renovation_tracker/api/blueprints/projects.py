@@ -41,7 +41,7 @@ def create_project():
         _run_enrichment(conn, client, project_id, data.name, data.room, data.budget)
 
     row = project_repository.get_project(conn, project_id)
-    return ProjectRead.model_validate(dict(row)).model_dump(mode="json"), 201
+    return ProjectRead.model_validate(project_repository._row_to_project_dict(row)).model_dump(mode="json"), 201
 
 
 @projects_bp.get("/<int:project_id>")
@@ -49,7 +49,7 @@ def get_project(project_id: int):
     """Fetch a single project by id."""
     conn = get_db()
     row = project_repository.get_project(conn, project_id)
-    return ProjectRead.model_validate(dict(row)).model_dump(mode="json"), 200
+    return ProjectRead.model_validate(project_repository._row_to_project_dict(row)).model_dump(mode="json"), 200
 
 
 @projects_bp.put("/<int:project_id>")
@@ -65,7 +65,7 @@ def update_project(project_id: int):
             _run_enrichment(conn, client, project_id, row["name"], row["room"], row["budget"])
             row = project_repository.get_project(conn, project_id)
 
-    return ProjectRead.model_validate(dict(row)).model_dump(mode="json"), 200
+    return ProjectRead.model_validate(project_repository._row_to_project_dict(row)).model_dump(mode="json"), 200
 
 
 @projects_bp.delete("/<int:project_id>")
@@ -91,5 +91,5 @@ def list_projects():
         target_date_from=request.args.get("target_date_from"),
         target_date_to=request.args.get("target_date_to"),
     )
-    projects = [ProjectDashboardRead.model_validate(dict(row)).model_dump(mode="json") for row in rows]
+    projects = [ProjectDashboardRead.model_validate(project_repository._row_to_project_dict(row)).model_dump(mode="json") for row in rows]
     return {"projects": projects}, 200

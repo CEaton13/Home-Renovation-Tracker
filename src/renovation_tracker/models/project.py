@@ -3,6 +3,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
 from datetime import date
 
+from renovation_tracker.models.enrichment import EnrichmentPayload
+
 Proj_Status = Literal["planning", "in_progress", "on_hold", "completed", "cancelled"]
 
 class ProjectCreate(BaseModel):
@@ -34,6 +36,7 @@ class ProjectRead(BaseModel):
     target_completion_date: date
     project_status: Proj_Status
     enrichment_status: Literal["pending", "complete", "failed"]
+    enrichment: EnrichmentPayload | None = None
 
 class ProjectDashboardRead(ProjectRead):
     """Response for the dashboard/list endpoint, including task-derived aggregates."""
@@ -43,3 +46,4 @@ class ProjectDashboardRead(ProjectRead):
     remaining_budget: int
     over_budget: bool
     task_count: int
+    enrichment: EnrichmentPayload | None = None

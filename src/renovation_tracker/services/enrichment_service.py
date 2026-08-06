@@ -30,7 +30,7 @@ def build_user_prompt(name: str, room: str, budget_cents: int) -> str:
         f"Project name: {name}\n"
         f"Room/area: {room}\n"
         f"Budget: {budget_cents} cents\n"
-        "Suggest a task breakdown."
+        "Suggest a task breakdown. Respond with a JSON object."
     )
 
 def generate_enrichment(client: EnrichmentClient, name: str, room: str, budget_cents: int) -> EnrichmentPayload:

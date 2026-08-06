@@ -1,5 +1,5 @@
 """Functions to access the data from the db for projects."""
-
+import json
 import sqlite3
 from sqlite3 import IntegrityError
 
@@ -154,3 +154,14 @@ def update_project_enrichment(
         (enrichment_payload, enrichment_status, project_id),
     )
     conn.commit()
+
+def _row_to_project_dict(row: sqlite3.Row) -> dict:
+    """Convert a raw projects row into a dict ready for ProjectRead
+    validation — parses the stored enrichment JSON string into a dict
+    (or None), since ProjectRead expects a structured EnrichmentPayload,
+    not a raw string.
+    """
+    data = dict(row)
+    payload = data.get("enrichment_payload")
+    data["enrichment"] = json.loads(payload) if payload else None
+    return data
