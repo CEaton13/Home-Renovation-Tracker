@@ -10,7 +10,14 @@ dependencies = [
     "python-dotenv>=1.0",
     "flask>=3.0",
     "openai>=1.0",
-    "gunicorn>=22.0",   
+    "gunicorn>=22.0",
+    "requests>=2.32",
+    "opentelemetry-distro>=0.49b0",
+    "opentelemetry-exporter-otlp>=1.28",
+    "opentelemetry-instrumentation-flask>=0.49b0",
+    "opentelemetry-instrumentation-sqlite3>=0.49b0",
+    "opentelemetry-instrumentation-httpx>=0.49b0",
+    "opentelemetry-instrumentation-requests>=0.49b0",
 ]
 
 [project.optional-dependencies]

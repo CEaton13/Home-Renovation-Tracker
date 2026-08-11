@@ -8,3 +8,4 @@ __pycache__/
 .coverage
 *.egg-info/
 16-home-renovation-tracker.md
+otel-tracing-implementation-plan.md

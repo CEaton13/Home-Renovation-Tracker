@@ -3,6 +3,8 @@
 import os
 import tempfile
 
+os.environ.setdefault("OTEL_SDK_DISABLED", "true")
+
 import pytest
 
 from renovation_tracker.app import create_app

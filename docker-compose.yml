@@ -8,6 +8,13 @@ services:
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
       - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OTEL_SERVICE_NAME=renovation-tracker-api
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
+      - OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+      - OTEL_PYTHON_LOG_CORRELATION=true
+    depends_on:
+      - jaeger
     volumes:
       - renovation_data:/app/data
     healthcheck:
@@ -15,6 +22,14 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4318:4318"     # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
 
 volumes:
   renovation_data:

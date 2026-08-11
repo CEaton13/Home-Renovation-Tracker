@@ -4,6 +4,7 @@ import uuid
 import time
 import structlog
 
+from opentelemetry import trace
 from flask import Flask, app, g, request
 from pathlib import Path
 from werkzeug.exceptions import HTTPException
@@ -62,6 +63,9 @@ def create_app(db_path: Path | str | None = None) -> Flask:
         g.request_id = str(uuid.uuid4())
         g.request_start_time = time.perf_counter()
         structlog.contextvars.bind_contextvars(request_id=g.request_id)
+        span = trace.get_current_span()
+        if span is not None:
+            span.set_attribute("app.request_id", g.request_id)
     
     @app.after_request
     def _log_request(response):

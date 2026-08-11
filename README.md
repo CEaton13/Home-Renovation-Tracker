@@ -56,6 +56,20 @@ On project creation, the service calls a deployed Azure OpenAI model to suggest 
 
 Every request emits one JSON log line (method, path, status code, duration, correlation id) via structlog. The same correlation id appears in every error response body under `request_id`, so a client-reported error can be traced directly to its server-side log line.
 
+## Tracing (demo)
+
+`docker compose up --build` also starts Jaeger, with its UI at `http://localhost:16686`. The API container runs under `opentelemetry-instrument` (see `Dockerfile`), so every request is traced automatically — no manual span code inside application logic beyond a single `app.request_id` attribute set in `app.py` for log/trace correlation. Traces are exported over OTLP/HTTP to the `jaeger` service; the `OTEL_*` env vars controlling this live in `.env.example`.
+
+**Generating a trace:** with the API container running, from the host machine (not inside Docker):
+
+```powershell
+opentelemetry-instrument python scripts/demo_agent.py
+```
+
+This script is a standalone "agent" that POSTs a demo project to `http://localhost:5000/projects`, with its own root span propagated to the API via the `traceparent` header. It's run from the host rather than as a compose service — simplest option for a demo script that only needs to reach the API's already-published port.
+
+**What to look for in the Jaeger UI:** search for service `renovation-tracker-api`, open the latest trace, and expect to see nested spans for the Flask request, the SQLite insert, the outbound Azure OpenAI call, and the SQLite enrichment update, all under the agent's root span (`agent.create_project_task`). If Azure OpenAI isn't configured, the httpx span is simply absent — the trace still completes since enrichment fails gracefully (see **AI Enrichment** above).
+
 ## Running Tests
 
 ```powershell
