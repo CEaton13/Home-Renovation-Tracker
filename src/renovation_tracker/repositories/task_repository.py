@@ -10,7 +10,7 @@ def create_task(conn: sqlite3.Connection, project_id: int, data: TaskCreate) -> 
     """Create a new task for a given project."""
     get_project(conn, project_id)  # raises NotFoundError if missing
 
-    cursor = conn.execute(
+    cursor = conn.cursor().execute(
         """
        INSERT INTO tasks (project_id, description, est_cost, trade_category, task_status)
         VALUES (?, ?, ?, ?, 'todo')
@@ -22,7 +22,7 @@ def create_task(conn: sqlite3.Connection, project_id: int, data: TaskCreate) -> 
 
 def get_task(conn: sqlite3.Connection, task_id: int) -> sqlite3.Row:
     """Fetch a single task by id."""
-    row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    row = conn.cursor().execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
     if row is None:
         raise NotFoundError(f"Task {task_id} not found")
     return row
@@ -67,7 +67,7 @@ def list_tasks(
         params.append(f"%{description_contains}%")
 
     query += " ORDER BY id"
-    return conn.execute(query, params).fetchall()
+    return conn.cursor().execute(query, params).fetchall()
 
 
 def update_task(conn: sqlite3.Connection, task_id: int, data: TaskUpdate) -> sqlite3.Row:
@@ -82,14 +82,14 @@ def update_task(conn: sqlite3.Connection, task_id: int, data: TaskUpdate) -> sql
     values = list(updates.values())
     values.append(task_id)
 
-    conn.execute(f"UPDATE tasks SET {set_clause}, updated_at = datetime('now') WHERE id = ?", values)
+    conn.cursor().execute(f"UPDATE tasks SET {set_clause}, updated_at = datetime('now') WHERE id = ?", values)
     conn.commit()
     return get_task(conn, task_id)
 
 def delete_task(conn: sqlite3.Connection, task_id: int) -> None:
     """Delete a task."""
     get_task(conn, task_id)  # raises NotFoundError if missing
-    conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.cursor().execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     conn.commit()
 
 def complete_task(conn: sqlite3.Connection, task_id: int, data: TaskComplete) -> tuple[sqlite3.Row, dict]:
@@ -102,7 +102,7 @@ def complete_task(conn: sqlite3.Connection, task_id: int, data: TaskComplete) ->
     if task["task_status"] == "done":
         raise ConflictError(f"Task {task_id} is already completed")
 
-    conn.execute(
+    conn.cursor().execute(
         "UPDATE tasks SET task_status = 'done', actual_cost = ?, updated_at = datetime('now') WHERE id = ?",
         (data.actual_cost, task_id),
     )

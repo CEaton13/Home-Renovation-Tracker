@@ -17,7 +17,7 @@ def ready():
     """Confirm downstream dependencies (the database) are reachable."""
     try:
         conn = get_db()
-        conn.execute("SELECT 1").fetchone()
+        conn.cursor().execute("SELECT 1").fetchone()
         return {"status": "ready"}, 200
     except Exception:
         current_app.logger.exception("Readiness check failed")
